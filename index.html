@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; base-uri 'none'; form-action 'none'">
+  <title>IW-Fox · UI preview</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <header class="topbar"><div class="brand"><span class="mark">IF</span><div><strong>IW-FOX</strong><small>Web replacement preview</small></div></div>
+    <span class="demo-label">SYNTHETIC DATA · PUBLIC UI PREVIEW</span></header>
+  <section id="entry-screen" class="entry-screen" aria-labelledby="entry-title">
+    <div class="entry-copy">
+      <span class="entry-kicker">IW-FOX · FOX COPY WORKSPACE</span>
+      <h1 id="entry-title">Bridge access, then Fox web workspace</h1>
+      <p>This is an interactive design preview with invented records. The accepted Fox copy stays on UbuntuFOX and is not connected to this website.</p>
+      <ol class="access-journey" aria-label="Planned access sequence">
+        <li><strong>Bridge identity</strong><span>Named person, web password, authenticator and active entity grant.</span></li>
+        <li><strong>Fox identity</strong><span>Verified Fox account mapped to that person and selected company. Credential method awaits source review.</span></li>
+        <li><strong>Web workspace</strong><span>Only approved functions and fields; no Fox EXE or remote desktop.</span></li>
+      </ol>
+      <label for="entry-company">Company / sample dataset</label>
+      <select id="entry-company" aria-describedby="entry-note">
+        <option value="ICRPL">ICRPL · sample company</option>
+        <option value="AGRA">Agra · sample company</option>
+        <option value="LLP">LLP · sample company</option>
+      </select>
+      <button id="open-workspace" type="button">Explore sample workspace</button>
+      <p id="entry-note" class="entry-note">Company names here are preview labels. Actual Fox account and entity mapping requires protected review.</p>
+      <div class="entry-status"><span>● Public UI preview</span><span>● No live Fox access</span><span>● Never enter a real password here</span></div>
+    </div>
+    <img class="entry-image" src="./fox-copy-hero.svg" alt="Illustration of a Fox copy data store with separate company workspaces" width="560" height="430">
+  </section>
+  <div class="shell" id="workspace-shell" hidden><aside class="sidebar"><div class="side-title">WORKSPACE</div><nav id="navigation" aria-label="Workspace modules"></nav>
+    <div class="side-note">Static design preview. No Fox, CRM, identity or database connection.</div></aside>
+    <main><div class="context"><div><span class="eyebrow">IW-FOX DESIGN PREVIEW</span><h1 id="page-title">Workspace</h1></div>
+      <div class="selectors"><button id="change-company" type="button" class="secondary">Change company</button><label>Simulated user <select id="persona"></select></label><label>Entity <select id="entity"></select></label></div></div>
+      <div class="notice" role="status">All names and records below are invented examples. Switching a persona is a UI simulation, not authentication. No change leaves this browser.</div>
+      <div id="content" aria-live="polite"></div>
+    </main></div>
+</body>
+</html>
