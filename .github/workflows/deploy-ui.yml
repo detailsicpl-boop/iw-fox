@@ -1,0 +1,36 @@
+name: Deploy IW-Fox preview to Hostinger
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - index.html
+      - app.js
+      - style.css
+      - fox-copy-hero.svg
+      - scripts/deploy_hostinger_ftps.py
+      - .github/workflows/deploy-ui.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: iw-fox-hostinger-preview
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: vars.IW_FOX_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Upload preview files over verified TLS
+        env:
+          IW_FOX_FTP_HOST: ${{ secrets.IW_FOX_FTP_HOST }}
+          IW_FOX_FTP_USER: ${{ secrets.IW_FOX_FTP_USER }}
+          IW_FOX_FTP_PASSWORD: ${{ secrets.IW_FOX_FTP_PASSWORD }}
+        run: python3 scripts/deploy_hostinger_ftps.py
