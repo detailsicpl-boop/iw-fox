@@ -7,6 +7,7 @@ from io import BytesIO
 import os
 from pathlib import Path
 import ssl
+import subprocess
 from urllib.parse import urlsplit
 
 
@@ -46,7 +47,20 @@ def main():
     # This account's home must be limited to public_html/iw-fox in hPanel.
     with FTP_TLS(context=ssl.create_default_context(), timeout=30) as ftp:
         ftp.connect(host, 21)
-        ftp.login(user, password)
+        try:
+            ftp.login(user, password)
+        except ssl.SSLCertVerificationError:
+            probe = subprocess.run(
+                ["openssl", "s_client", "-starttls", "ftp", "-connect", f"{host}:21", "-showcerts"],
+                input="", text=True, capture_output=True, timeout=15, check=False,
+            )
+            cert = subprocess.run(
+                ["openssl", "x509", "-noout", "-subject", "-ext", "subjectAltName"],
+                input=probe.stdout, text=True, capture_output=True, timeout=5, check=False,
+            )
+            print("FTP TLS certificate names (public server metadata):", flush=True)
+            print(cert.stdout if cert.returncode == 0 else "Certificate details unavailable", flush=True)
+            raise
         ftp.prot_p()
         ftp.set_pasv(True)
         for name in ASSETS:
