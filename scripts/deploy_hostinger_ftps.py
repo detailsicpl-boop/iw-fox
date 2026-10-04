@@ -7,18 +7,41 @@ from io import BytesIO
 import os
 from pathlib import Path
 import ssl
+from urllib.parse import urlsplit
 
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ("style.css", "app.js", "fox-copy-hero.svg", "index.html")
 
 
+def ftp_hostname(value):
+    """Accept a bare host, host:21, or ftp(s) URL with no remote path."""
+    raw = value.strip()
+    if not raw or any(char.isspace() for char in raw):
+        raise ValueError("FTP host is missing or contains spaces")
+    parsed = urlsplit(raw if "://" in raw else "//" + raw)
+    if parsed.scheme and parsed.scheme.lower() not in ("ftp", "ftps"):
+        raise ValueError("FTP host scheme must be ftp or ftps")
+    if parsed.username or parsed.password or parsed.path not in ("", "/") or parsed.query or parsed.fragment:
+        raise ValueError("FTP host must not contain credentials, a path, query, or fragment")
+    try:
+        hostname, port = parsed.hostname, parsed.port
+    except ValueError as exc:
+        raise ValueError("FTP host or port is invalid") from exc
+    if not hostname or (port is not None and port != 21):
+        raise ValueError("FTP host must use port 21")
+    return hostname
+
+
 def main():
-    host = os.environ["IW_FOX_FTP_HOST"]
-    user = os.environ["IW_FOX_FTP_USER"]
-    password = os.environ["IW_FOX_FTP_PASSWORD"]
-    if not all((host, user, password)) or "/" in host or ":" in host:
-        raise SystemExit("Invalid IW-Fox deployment settings")
+    user = os.environ.get("IW_FOX_FTP_USER", "")
+    password = os.environ.get("IW_FOX_FTP_PASSWORD", "")
+    if not user or not password:
+        raise SystemExit("Missing IW-Fox FTP username or password")
+    try:
+        host = ftp_hostname(os.environ.get("IW_FOX_FTP_HOST", ""))
+    except ValueError as exc:
+        raise SystemExit(f"Invalid IW-Fox FTP host format: {exc}") from None
 
     # This account's home must be limited to public_html/iw-fox in hPanel.
     with FTP_TLS(context=ssl.create_default_context(), timeout=30) as ftp:
