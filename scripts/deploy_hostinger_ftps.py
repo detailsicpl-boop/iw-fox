@@ -7,12 +7,25 @@ from io import BytesIO
 import os
 from pathlib import Path
 import ssl
-import subprocess
 from urllib.parse import urlsplit
 
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ("style.css", "app.js", "fox-copy-hero.svg", "index.html")
+PINNED_IP = "148.135.141.151"
+PINNED_CERT_SHA256 = "79a7c9aeaad8855c82f58598597b931b10429afec6234b621588f4e937b36dee"
+
+
+class PinnedFTP_TLS(FTP_TLS):
+    def _check_peer(self, connection):
+        if sha256(connection.getpeercert(binary_form=True)).hexdigest() != PINNED_CERT_SHA256:
+            raise ssl.SSLError("FTP server certificate changed; stop deployment")
+
+    def ntransfercmd(self, cmd, rest=None):
+        connection, size = super().ntransfercmd(cmd, rest)
+        self._check_peer(connection)
+        return connection, size
+
 
 
 def ftp_hostname(value):
@@ -44,29 +57,22 @@ def main():
     except ValueError as exc:
         raise SystemExit(f"Invalid IW-Fox FTP host format: {exc}") from None
 
-    # This account's home must be limited to public_html/iw-fox in hPanel.
-    with FTP_TLS(context=ssl.create_default_context(), timeout=30) as ftp:
+    # The scoped FTP account's home must be public_html/iw-fox.
+    # The IP's certificate is issued for *.hstgr.io, so validate the CA chain
+    # and pin the observed server certificate before sending credentials.
+    pinned = host == PINNED_IP
+    context = ssl.create_default_context()
+    if pinned:
+        context.check_hostname = False
+    client = PinnedFTP_TLS if pinned else FTP_TLS
+    with client(context=context, timeout=30) as ftp:
         ftp.connect(host, 21)
-        print("FTP server greeting:", ftp.getwelcome(), flush=True)
-        try:
+        if pinned:
+            ftp.auth()
+            ftp._check_peer(ftp.sock)
+            ftp.login(user, password, secure=False)
+        else:
             ftp.login(user, password)
-        except ssl.SSLCertVerificationError:
-            probe = subprocess.run(
-                ["openssl", "s_client", "-starttls", "ftp", "-connect", f"{host}:21", "-showcerts"],
-                input="", text=True, capture_output=True, timeout=15, check=False,
-            )
-            cert = subprocess.run(
-                ["openssl", "x509", "-noout", "-subject", "-ext", "subjectAltName"],
-                input=probe.stdout, text=True, capture_output=True, timeout=5, check=False,
-            )
-            fingerprint = subprocess.run(
-                ["openssl", "x509", "-noout", "-fingerprint", "-sha256"],
-                input=probe.stdout, text=True, capture_output=True, timeout=5, check=False,
-            )
-            print("FTP certificate fingerprint:", fingerprint.stdout if fingerprint.returncode == 0 else "unavailable", flush=True)
-            print("FTP TLS certificate names (public server metadata):", flush=True)
-            print(cert.stdout if cert.returncode == 0 else "Certificate details unavailable", flush=True)
-            raise
         ftp.prot_p()
         ftp.set_pasv(True)
         for name in ASSETS:
