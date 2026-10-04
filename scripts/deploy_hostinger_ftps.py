@@ -47,6 +47,7 @@ def main():
     # This account's home must be limited to public_html/iw-fox in hPanel.
     with FTP_TLS(context=ssl.create_default_context(), timeout=30) as ftp:
         ftp.connect(host, 21)
+        print("FTP server greeting:", ftp.getwelcome(), flush=True)
         try:
             ftp.login(user, password)
         except ssl.SSLCertVerificationError:
@@ -58,6 +59,11 @@ def main():
                 ["openssl", "x509", "-noout", "-subject", "-ext", "subjectAltName"],
                 input=probe.stdout, text=True, capture_output=True, timeout=5, check=False,
             )
+            fingerprint = subprocess.run(
+                ["openssl", "x509", "-noout", "-fingerprint", "-sha256"],
+                input=probe.stdout, text=True, capture_output=True, timeout=5, check=False,
+            )
+            print("FTP certificate fingerprint:", fingerprint.stdout if fingerprint.returncode == 0 else "unavailable", flush=True)
             print("FTP TLS certificate names (public server metadata):", flush=True)
             print(cert.stdout if cert.returncode == 0 else "Certificate details unavailable", flush=True)
             raise
